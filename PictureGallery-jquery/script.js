@@ -5,6 +5,9 @@
         var xPos = 50;
         var yPos = 50;
         var gWidth = gallery.width();
+        var hoverWait = false;
+        var showingLargeImage = false;
+
         images.each(function(idx, el) {
             var img = $(el);
             img.data = ('homeX', xPos);
@@ -13,25 +16,70 @@
             img.css({
                 'left': xPos,
                 'top': yPos,
-                'width': img.width() * 0.3
+                'width': img.width() * 0.25
             });
-            xPos = xPos + 500;
+            xPos = xPos + 170;
             if (xPos > gWidth - 100) {
                 xPos = 50;
-                yPos += 400;
+                yPos += 100;
             }
 
             img.hover(
                 function(event) {
+                    if (showingLargeImage) return;
+                    hoverWait = false;
                     var target = $(event.target);
-                    animateImage(target, 500, target.data('homeX'), target.data('homeY'), 3);
+                    bringImageToTop(target);
+                    avoidImage(target);
+                    animateImage(target, 500, target.data('homeX'), target.data('homeY'), 1.5);
                 },
                 function(event) {
-                    returnAllToNormal();
+                    if (showingLargeImage) return;
+                    hoverWait = true;
+                    setTimeout(function() {
+                        if (hoverWait) {
+                            returnAllToNormal();
+                        }
+                    }, 200);
                 }
             );
+            img.click(
+                function() {
+                    if (!showingLargeImage) {
+                        showingLargeImage = true;
+                        console.log('1');
+                        animateImage(img, 500, img.data('homeX'), img.data('homeY'), 1);
+                    } else {
+                        animateImage(img, 500, img.data('homeX'), img.data('homeY'), 1);
+                        returnAllToNormal();
+                        showingLargeImage = false;
+                    };
+                });
         });
+        var avoidImage = function(target) {
+            images.each(function(idx, el) {
+                var img = $(el);
+                if (img[0] != target[0]) {
+                    var xdiff = img.data('homeX') - target.data('homeX');
+                    var ydiff = img.data('homeY') - target.data('homeY');
+                    var adj = 100;
+                    var xAdjust = (xdiff > 0) ? adj : (xdiff < 0) ? -adj : 0;
+                    var yAdjust = (xdiff > 0) ? adj : (xdiff < 0) ? -ajd : 0;
+                    if (yAdjust != 0) xAdjust = 0;
+                    var newX = img.data('homeX') + xAdjust;
+                    var newY = img.data('homeY') + yAdjust;
+                    animateImage(img, 500, newX, newY, 1);
 
+                }
+            });
+        }
+        var bringImageToTop = function(img) {
+            images.each(function(idx, el) {
+                $(el)
+                    .css('z-index', 0);
+            });
+            img.css('z-index', 1);
+        }
         var returnAllToNormal = function() {
             images.each(function(idx, el) {
                 var img = $(el);
@@ -42,8 +90,7 @@
         var animateImage = function(img, duration, left, top, scale) {
             img.stop();
 
-            img.css('textIndent', img.data('currentScale'));
-
+            img.css('textIndent', img.data('currentScale')); //textIndent to scale
             img.animate({
                 'left': left,
                 'top': top,
@@ -52,6 +99,7 @@
                 duration: duration,
                 step: function(now, fx) {
                     if (fx.prop == 'textIndent') {
+                        //scale
                         img.data('currentScale', now);
                         img.css('transform', 'scale(' + now + ')');
                     } else if (fx.prop == 'left')
